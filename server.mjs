@@ -42,8 +42,70 @@ const server = http.createServer(async (req, res) => {
       if (lanIp) {
         const clipboardPolyfill = `
         <script>
-          console.log('[POLYFILL] Injecting clipboard polyfill');
+          console.log('[POLYFILL] Injecting clipboard polyfill and board lines');
           window.__LAN_IP__='${lanIp}';
+          
+          // Add board grid lines
+          (function() {
+            let gridAdded = false;
+            const checkAndAddGrid = setInterval(() => {
+              const canvas = document.getElementById('app');
+              if (canvas && canvas._renderer && !gridAdded) {
+                const renderer = canvas._renderer;
+                const scene = canvas._scene;
+                if (scene && window.THREE) {
+                  gridAdded = true;
+                  clearInterval(checkAndAddGrid);
+                  
+                  // Create grid lines for the chess board
+                  const gridMaterial = new THREE.LineBasicMaterial({ 
+                    color: 0x333333,
+                    opacity: 0.5,
+                    transparent: true
+                  });
+                  
+                  // Add vertical lines
+                  for (let i = 0; i <= 8; i++) {
+                    const points = [];
+                    points.push(new THREE.Vector3(i - 0.5, 0.01, -0.5));
+                    points.push(new THREE.Vector3(i - 0.5, 0.01, 7.5));
+                    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                    const line = new THREE.Line(geometry, gridMaterial);
+                    scene.add(line);
+                  }
+                  
+                  // Add horizontal lines
+                  for (let i = 0; i <= 8; i++) {
+                    const points = [];
+                    points.push(new THREE.Vector3(-0.5, 0.01, i - 0.5));
+                    points.push(new THREE.Vector3(7.5, 0.01, i - 0.5));
+                    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                    const line = new THREE.Line(geometry, gridMaterial);
+                    scene.add(line);
+                  }
+                  
+                  // Add thicker border
+                  const borderMaterial = new THREE.LineBasicMaterial({ 
+                    color: 0x555555,
+                    linewidth: 2
+                  });
+                  const borderPoints = [];
+                  borderPoints.push(new THREE.Vector3(-0.5, 0.02, -0.5));
+                  borderPoints.push(new THREE.Vector3(7.5, 0.02, -0.5));
+                  borderPoints.push(new THREE.Vector3(7.5, 0.02, 7.5));
+                  borderPoints.push(new THREE.Vector3(-0.5, 0.02, 7.5));
+                  borderPoints.push(new THREE.Vector3(-0.5, 0.02, -0.5));
+                  
+                  const borderGeometry = new THREE.BufferGeometry().setFromPoints(borderPoints);
+                  const border = new THREE.Line(borderGeometry, borderMaterial);
+                  scene.add(border);
+                  
+                  console.log('[BOARD] Added grid lines to chess board');
+                }
+              }
+            }, 100);
+          })();
+          
           // Clipboard polyfill for HTTP contexts
           if (!navigator.clipboard) {
             console.log('[POLYFILL] navigator.clipboard not found, adding polyfill');
